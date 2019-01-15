@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+			#user { color: blue; font: Helvetica, Arial; }
+			#divFeedback { padding: 0; position: fixed; bottom: 41px; width: 100%;}
+			#feedback { margin: 10px; font: rgb(95, 90, 90) 16px Helvetica, Arial !important }
+    </style>
+  </head>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <body>
+		<h3>User: </h3> <h3 id="user"></h3>
+		<ul id="messages"></ul>
+		<div id="divFeedback">
+			<div id="feedback"></span>
+		</div>
+    <form name="sendForm" action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+  </body>
+  <script>
+		var socket = io();
+		//var socket = io.connect('http://localhost:3000');
+		var timeout
+		var nickname
+
+		function timeoutFunction() {
+			socket.emit("not typing", false);
+		}
+
+		$('form').submit(function(){
+			socket.emit("not typing", false);
+			socket.emit('chat message', $('#m').val());
+			$('#m').val('');
+			return false;
+		});
+
+		socket.on('nickname', function(data){
+			if (data && data.nickname) {
+				nickname = data.nickname
+			} else {
+				nickname = 'anonymous'
+			}
+			$('#user').html(nickname);
+		});
+
+		socket.on('chat message', function(msg){
+			$('#messages').append($('<li>').text(msg));
+			window.scrollTo(0, document.body.scrollHeight);
+		});
+
+		$('#m').on('keyup',function(e){
+			if (e.which != 13) {
+				socket.emit('is typing', {nickname: nickname});
+				clearTimeout(timeout)
+				timeout = setTimeout(timeoutFunction, 1000)
+			}
+		});
+
+		socket.on('typing', function(data){
+			if (data) {
+				feedback.innerHTML = '<p><em>' + data.nickname + ' is typing...</em></p>';
+			} else {
+				feedback.innerHTML = ''
+			}
+		});
+	</script>
+</html>
